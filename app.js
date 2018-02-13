@@ -37,28 +37,53 @@ var inMemoryStorage = new builder.MemoryBotStorage();
 
 // Create your bot with a function to receive messages from the user
 var bot = new builder.UniversalBot(connector);
-bot.set('storage', tableStorage);
+bot.set('storage', inMemoryStorage);
 
-bot.dialog('/', function(session) {
+bot.dialog('/', [
+    function(session) {
         var card = new builder.HeroCard(session)
-            .title("Microsoft Bot Framework")
-            .text("Your bots - wherever your users are talking.")
+            .title("Welcome to ZTerrCore")
+            .text("McKesson's Ops Bot !")
             .images([
-                builder.CardImage.create(session, "http://docs.botframework.com/images/demo_bot_image.png")
+                builder.CardImage.create(session, "https://raw.githubusercontent.com/agnelantony2/zterracore/master/images/z.png")
             ]);
         var msg = new builder.Message(session).attachments([card]);
         session.send(msg);
-        session.send("Hi... I'm the Microsoft Bot Framework demo bot for Slack. I can show you everything you can use our Bot Builder SDK to do on Slack.");
-        //session.beginDialog('/menu');
+        session.send("How can I help ? Type 'help' for menu options.");
+        if (session.entity == 'help') {
+            session.send("Opening Help...");
+            session.beginDialog('/help');
+        }
     },
     function(session, results) {
-        // Always say goodbye
-        session.send("Ok... See you later!");
-    });
+        if (results.response && results.response.entity == 'help') {
+            session.beginDialog('/help');
+        } else {
+            session.endDialog();
+        }
+    },
+]);
 
-bot.on('typing', function(message) {
-    var name = message.user ? message.user.name : null;
-    var reply = new builder.Message()
-        .address(message.address)
-        .text("Hello %s. How can I help you today ?", name || 'there');
-});
+bot.dialog('/help', [
+    function(session) {
+        builder.Prompts.choice(session, "What category you would like information on ?", "Azure Resource|OneCloud Resource|Network|BAP|Outage|Quit", {
+            listStyle: builder.ListStyle.button
+        });
+    },
+    function(session, results) {
+        if (results.response && results.response.entity != 'Quit') {
+            // Launch demo dialog
+            //session.beginDialog('/' + results.response.entity);
+            session.send("Work in progress...Check back soon.");
+            session.endDialog();
+        } else {
+            // Exit the menu
+            session.send("Goodbye. Later !");
+            session.endDialog();
+        }
+    },
+    function(session, results) {
+        // The menu runs a loop until the user chooses to (quit).
+        session.replaceDialog('/help');
+    }
+]).triggerAction({ matches: /^help/i });
